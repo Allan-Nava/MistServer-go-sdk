@@ -19,17 +19,9 @@ type IMistGoClient interface {
 }
 
 func (o *MistGo) HealthCheck() error {
-	resp, err := o.RestClient.R().
-		SetHeader("Accept", "application/json").
-		Get(o.Url)
-	//
+	_, err := restyGet(o.Url, nil)
 	if err != nil {
-		return err
-	}
-	//
-	if !strings.Contains(resp.Status(), "200") {
-		o.DebugPrint(fmt.Sprintf("resp -> %v", resp))
-		return errors.New("Could not connect haproxy")
+		return nil, err
 	}
 	return nil
 }

@@ -9,7 +9,7 @@ import (
 //
 //
 func BuildMist(url string, debug bool) (*MistGo, error) {
-	mistClient := &MistGo{}
+	mistClient := &MistGo{
 		debug: 		debug,
 		Url:        url,
 		restClient: resty.New(),

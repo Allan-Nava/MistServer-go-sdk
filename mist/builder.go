@@ -32,7 +32,7 @@ func BuildMist(url string, debug bool) (*MistGo, error) {
 //
 
 func (o *MistGo) debugPrint(data interface{}) {
-	if o.Debug {
+	if o.debug {
 		log.Println(data)
 	}
 }

@@ -21,7 +21,7 @@ func BuildMist(url string, debug bool, header *HeaderConfigurator) (*MistGo, err
 	if header != nil {
 		// Headers for all request
 		for h, v := range header.GetHeaders() {
-			ovenClient.restClient.SetHeader(h, v)
+			mistClient.restClient.SetHeader(h, v)
 		}
 	}
 	//

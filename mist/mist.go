@@ -19,7 +19,7 @@ type IMistGoClient interface {
 }
 
 func (o *MistGo) HealthCheck() error {
-	_, err := restyGet(o.Url, nil)
+	_, err := o.restyGet(o.Url, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -8,7 +8,7 @@ import (
 
 //
 //
-func BuildMist(url string, debug bool) (*MistGo, error) {
+func BuildMist(url string, debug bool, header *HeaderConfigurator) (*MistGo, error) {
 	mistClient := &MistGo{
 		debug: 		debug,
 		Url:        url,
@@ -18,8 +18,12 @@ func BuildMist(url string, debug bool) (*MistGo, error) {
 	//--------------------------------------------------------------------------------
 	// Host URL for all request. So you can use relative URL in the request
 	mistClient.restClient.SetHostURL(url)
-	// Headers for all request
-	//mistClient.restClient.SetHeader("", "Basic ")
+	if header != nil {
+		// Headers for all request
+		for h, v := range header.GetHeaders() {
+			ovenClient.restClient.SetHeader(h, v)
+		}
+	}
 	//
 	if debug {
 		mistClient.restClient.SetDebug(true)

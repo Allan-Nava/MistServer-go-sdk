@@ -4,4 +4,4 @@
 MistServer is a streaming media server that works well in any streaming environment even on a Raspberry Pi! It bridges the gap between dedicated media servers and web servers, performing the best of both worlds when it comes to media streaming delivery.
 
 
-[Official Rest API Documentation](https://api-class.mist.com/reference/rest/)
+[Official Rest API Documentation](https://mistserver.org/documentation)

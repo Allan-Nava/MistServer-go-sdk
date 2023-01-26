@@ -1,7 +1,6 @@
 package mist_go
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 

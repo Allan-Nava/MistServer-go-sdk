@@ -45,7 +45,8 @@ func (o *MistGo) restyPost(url string, body interface{}) (*resty.Response, error
 	}
 	if !strings.Contains(resp.Status(), "200") {
 		o.debugPrint(resp)
-		return nil, errors.New(resp.Status())
+		//err = fmt.Errorf("%v",resp)
+		return nil, errors.New(resp)
 	}
 	return resp, nil
 }
@@ -60,7 +61,7 @@ func (o *MistGo) restyGet(url string, queryParams map[string]string) (*resty.Res
 	}
 	if !strings.Contains(resp.Status(), "200") {
 		o.debugPrint(resp)
-		return nil, errors.New(resp.Status())
+		return nil, errors.New(resp)
 	}
 	return resp, nil
 }

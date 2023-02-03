@@ -15,7 +15,7 @@ Use go get to install the library:
 go get github.com/Allan-Nava/MistServer-go-sdk
 
 ```
-## API Reference
+## API Reference
 The API reference documentation can be found in the Godoc.
 
 ## Contribute

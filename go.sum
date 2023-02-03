@@ -1,3 +1,5 @@
+github.com/Paxx-RnD/go-helper v1.0.13 h1:mo+o6IAAFnLB7AkVYgj+g4NIt5prTEOKkz7GdHfSyKU=
+github.com/Paxx-RnD/go-helper v1.0.13/go.mod h1:wyPvFHaG0n5BsqXZCXOxYW87N8PhLVnCDcXLYXPS6g8=
 github.com/go-resty/resty/v2 v2.7.0 h1:me+K9p3uhSmXtrBZ4k9jcEAfJmuC8IivWHwaLZwPrFY=
 github.com/go-resty/resty/v2 v2.7.0/go.mod h1:9PWDzw47qPphMRFfhsyk0NnSgvluHcljSMVIq3w7q0I=
 golang.org/x/net v0.0.0-20211029224645-99673261e6eb h1:pirldcYWx7rx7kE5r+9WsOXPXK0+WH5+uZ7uPmJ44uM=

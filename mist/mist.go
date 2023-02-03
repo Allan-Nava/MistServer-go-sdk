@@ -14,7 +14,10 @@ type MistGo struct {
 }
 
 type IMistGoClient interface {
+	//
 	HealthCheck() error
+	IsDebug() bool
+	//
 }
 
 func (o *MistGo) HealthCheck() error {

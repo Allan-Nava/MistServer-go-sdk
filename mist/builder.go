@@ -5,7 +5,6 @@ import (
 
 	"github.com/go-resty/resty/v2"
 )
-
 //
 //
 func BuildMist(url string, debug bool, header *HeaderConfigurator) (*MistGo, error) {
@@ -40,3 +39,5 @@ func (o *MistGo) debugPrint(data interface{}) {
 		log.Println(data)
 	}
 }
+
+//

@@ -7,7 +7,7 @@ MistServer is a streaming media server that works well in any streaming environm
 
 MistServer-go-sdk is a Go client library for interfacing with the MistServer API. It provides a convenient way to interact with the server and perform operations like creating and managing streams, retrieving server information, and managing access control.
 
-## Installation
+## Installation
 
 Use go get to install the library:
 

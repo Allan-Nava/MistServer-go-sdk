@@ -1,7 +1,8 @@
 package mist_go
 
 const (
-	// AUTH
-	SESSION     = "/"
+	// 
+	COMMAND_URL    = "/api2?"
 	//
 )
+

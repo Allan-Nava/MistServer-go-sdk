@@ -9,7 +9,7 @@ import (
 	"gopkg.in/validator.v2"
 )
 
-type MistGo struct {
+type mistGo struct {
 	Url        string
 	restClient *resty.Client
 	debug      bool
@@ -19,12 +19,21 @@ type IMistGoClient interface {
 	//
 	HealthCheck() error
 	IsDebug() bool
+	//debugPrint(data interface{})
 	// Auth
 	Authenticate(auth AuthorizeCommand) (*ResponseAuth, error)
 	// Stream
 }
 
-func (o *MistGo) HealthCheck() error {
+/*func NewMistGoClient(url string, debug bool) *mistGo {
+	return &mistGo{
+		Url:        url,
+		restClient: resty.New(),
+		debug:      debug,
+	}
+}*/
+
+func (o *mistGo) HealthCheck() error {
 	_, err := o.restyGet(o.Url, nil)
 	if err != nil {
 		return err
@@ -32,11 +41,11 @@ func (o *MistGo) HealthCheck() error {
 	return nil
 }
 
-func (o *MistGo) IsDebug() bool {
+func (o *mistGo) IsDebug() bool {
 	return o.debug
 }
 
-func (o *MistGo) Authenticate(auth AuthorizeCommand) (*ResponseAuth, error) {
+func (o *mistGo) Authenticate(auth AuthorizeCommand) (*ResponseAuth, error) {
 	//
 	if errs := validator.Validate(auth); errs != nil {
 		// values not valid, deal with errors here
@@ -68,7 +77,7 @@ func (o *MistGo) Authenticate(auth AuthorizeCommand) (*ResponseAuth, error) {
 
 // Resty Methods
 
-func (o *MistGo) restyPost(url string, body interface{}) (*resty.Response, error) {
+func (o *mistGo) restyPost(url string, body interface{}) (*resty.Response, error) {
 	resp, err := o.restClient.R().
 		SetHeader("Accept", "application/json").
 		SetBody(body).
@@ -85,7 +94,7 @@ func (o *MistGo) restyPost(url string, body interface{}) (*resty.Response, error
 	return resp, nil
 }
 
-func (o *MistGo) restyGet(url string, queryParams map[string]string) (*resty.Response, error) {
+func (o *mistGo) restyGet(url string, queryParams map[string]string) (*resty.Response, error) {
 	resp, err := o.restClient.R().
 		SetQueryParams(queryParams).
 		Get(url)

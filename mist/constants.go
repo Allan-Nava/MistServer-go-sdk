@@ -2,7 +2,7 @@ package mist_go
 
 const (
 	// 
-	COMMAND_URL    = "/api2?"
+	COMMAND_URL    = "/api2"
 	//
 )
 

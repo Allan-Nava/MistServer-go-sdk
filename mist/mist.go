@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/go-resty/resty/v2"
+	"gopkg.in/validator.v2"
 )
 
 type MistGo struct {
@@ -17,7 +18,9 @@ type IMistGoClient interface {
 	//
 	HealthCheck() error
 	IsDebug() bool
-	//
+	// Auth 
+	Authenticate(auth AuthorizeCommand) (*ResponseAuth, error)
+	// Stream 
 }
 
 func (o *MistGo) HealthCheck() error {
@@ -28,11 +31,35 @@ func (o *MistGo) HealthCheck() error {
 	return nil
 }
 
-
 // 
 func (o *MistGo) IsDebug() bool {
 	return o.debug
 }
+
+func (o *MistGo) Authenticate(auth AuthorizeCommand) (*ResponseAuth, error){
+	//
+	if errs := validator.Validate(auth); errs != nil {
+		// values not valid, deal with errors here
+		return nil, errs
+	}
+	//
+	rBody := &AuthCommand{
+		Authorize: auth
+	}
+	resp, err := o.restyGet(COMMAND_URL, rBody)
+	if err != nil {
+		return nil, err
+	}
+	o.debugPrint(resp)
+	//
+	var obj route.ResponseAuth
+	if err := json.Unmarshal(resp.Body(), &obj); err != nil {
+		return nil, err
+	}
+	return &obj, nil
+}
+
+
 
 // Resty Methods
 

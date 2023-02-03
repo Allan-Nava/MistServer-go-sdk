@@ -1,6 +1,7 @@
 package mist_go
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -18,9 +19,9 @@ type IMistGoClient interface {
 	//
 	HealthCheck() error
 	IsDebug() bool
-	// Auth 
+	// Auth
 	Authenticate(auth AuthorizeCommand) (*ResponseAuth, error)
-	// Stream 
+	// Stream
 }
 
 func (o *MistGo) HealthCheck() error {
@@ -31,12 +32,11 @@ func (o *MistGo) HealthCheck() error {
 	return nil
 }
 
-// 
 func (o *MistGo) IsDebug() bool {
 	return o.debug
 }
 
-func (o *MistGo) Authenticate(auth AuthorizeCommand) (*ResponseAuth, error){
+func (o *MistGo) Authenticate(auth AuthorizeCommand) (*ResponseAuth, error) {
 	//
 	if errs := validator.Validate(auth); errs != nil {
 		// values not valid, deal with errors here
@@ -44,22 +44,27 @@ func (o *MistGo) Authenticate(auth AuthorizeCommand) (*ResponseAuth, error){
 	}
 	//
 	rBody := &AuthCommand{
-		Authorize: auth
+		Authorize: auth,
 	}
-	resp, err := o.restyGet(COMMAND_URL, rBody)
+	b, err := json.Marshal(rBody)
+	if err != nil {
+		return nil, err
+	}
+	request := map[string]string{
+		"command": string(b),
+	}
+	resp, err := o.restyGet(COMMAND_URL, request)
 	if err != nil {
 		return nil, err
 	}
 	o.debugPrint(resp)
 	//
-	var obj route.ResponseAuth
+	var obj ResponseAuth
 	if err := json.Unmarshal(resp.Body(), &obj); err != nil {
 		return nil, err
 	}
 	return &obj, nil
 }
-
-
 
 // Resty Methods
 
@@ -74,7 +79,7 @@ func (o *MistGo) restyPost(url string, body interface{}) (*resty.Response, error
 	}
 	if !strings.Contains(resp.Status(), "200") {
 		o.debugPrint(resp)
-		err = fmt.Errorf("%v",resp)
+		err = fmt.Errorf("%v", resp)
 		return nil, err
 	}
 	return resp, nil
@@ -90,7 +95,7 @@ func (o *MistGo) restyGet(url string, queryParams map[string]string) (*resty.Res
 	}
 	if !strings.Contains(resp.Status(), "200") {
 		o.debugPrint(resp)
-		err = fmt.Errorf("%v",resp)
+		err = fmt.Errorf("%v", resp)
 		return nil, err
 	}
 	return resp, nil

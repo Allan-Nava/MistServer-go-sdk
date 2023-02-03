@@ -10,7 +10,7 @@ package mist_go
 }
 */
 type ResponseAuth struct {
-	Authorize Authorize `authorize`
+	Authorize Authorize `json:"authorize"`
 }
 
 type Authorize struct {

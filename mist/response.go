@@ -1,19 +1,18 @@
 package mist_go
 
-
 /*
-{
-    "authorize": {
-        "challenge": "",
-        "status": "CHALL"
-    }
-}
+	{
+	    "authorize": {
+	        "challenge": "",
+	        "status": "CHALL"
+	    }
+	}
 */
-type ResponseAuth struct {
+type ResponseBase struct {
 	Authorize Authorize `json:"authorize"`
 }
 
 type Authorize struct {
-	Challenge 	string `json:"challenge"`
-	Status 		string `json:"status"`
+	Challenge string `json:"challenge"`
+	Status    string `json:"status"`
 }

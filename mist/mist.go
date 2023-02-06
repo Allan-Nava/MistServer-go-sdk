@@ -21,8 +21,13 @@ type IMistGoClient interface {
 	IsDebug() bool
 	//debugPrint(data interface{})
 	// Auth
-	Authenticate(auth AuthorizeCommand) (*ResponseAuth, error)
+	Authenticate(auth AuthorizeCommand) (*ResponseBase, error)
+	// Capabilities
+	GetCapabilities() (*ResponseBase, error)
 	// Stream
+	AddStream(streamName string, source string) (*ResponseBase, error)
+	ActiveStreams() (*ResponseBase, error)
+	//
 }
 
 /*func NewMistGoClient(url string, debug bool) *mistGo {
@@ -45,7 +50,7 @@ func (o *mistGo) IsDebug() bool {
 	return o.debug
 }
 
-func (o *mistGo) Authenticate(auth AuthorizeCommand) (*ResponseAuth, error) {
+func (o *mistGo) Authenticate(auth AuthorizeCommand) (*ResponseBase, error) {
 	//
 	if errs := validator.Validate(auth); errs != nil {
 		// values not valid, deal with errors here
@@ -68,7 +73,85 @@ func (o *mistGo) Authenticate(auth AuthorizeCommand) (*ResponseAuth, error) {
 	}
 	o.debugPrint(resp)
 	//
-	var obj ResponseAuth
+	var obj ResponseBase
+	if err := json.Unmarshal(resp.Body(), &obj); err != nil {
+		return nil, err
+	}
+	return &obj, nil
+}
+
+func (o *mistGo) GetCapabilities() (*ResponseBase, error) {
+	rBody := &CapabilitiesCommand{
+		Capabilites: true,
+	}
+	b, err := json.Marshal(rBody)
+	if err != nil {
+		return nil, err
+	}
+	request := map[string]string{
+		"command": string(b),
+	}
+	resp, err := o.restyGet(COMMAND_URL, request)
+	if err != nil {
+		return nil, err
+	}
+	o.debugPrint(resp)
+	//
+	var obj ResponseBase
+	if err := json.Unmarshal(resp.Body(), &obj); err != nil {
+		return nil, err
+	}
+	return &obj, nil
+}
+
+func (o *mistGo) AddStream(streamName string, source string) (*ResponseBase, error) {
+	rBody := &AddStreamCommand{
+		AddStream: map[string]interface{}{
+			streamName: struct {
+				Source string `json:"source"`
+			}{
+				Source: source,
+			},
+		},
+	}
+	b, err := json.Marshal(rBody)
+	if err != nil {
+		return nil, err
+	}
+	request := map[string]string{
+		"command": string(b),
+	}
+	resp, err := o.restyGet(COMMAND_URL, request)
+	if err != nil {
+		return nil, err
+	}
+	o.debugPrint(resp)
+	//
+	var obj ResponseBase
+	if err := json.Unmarshal(resp.Body(), &obj); err != nil {
+		return nil, err
+	}
+	return &obj, nil
+}
+
+func (o *mistGo) ActiveStreams() (*ResponseBase, error) {
+	rBody := &ActiveStreamsCommand{
+		ActiveStreams: "",
+	}
+	b, err := json.Marshal(rBody)
+	if err != nil {
+		return nil, err
+	}
+	request := map[string]string{
+		"command": string(b),
+	}
+	resp, err := o.restyGet(COMMAND_URL, request)
+	if err != nil {
+		return nil, err
+	}
+	o.debugPrint(resp)
+	//
+	var obj ResponseBase
 	if err := json.Unmarshal(resp.Body(), &obj); err != nil {
 		return nil, err
 	}
@@ -77,7 +160,7 @@ func (o *mistGo) Authenticate(auth AuthorizeCommand) (*ResponseAuth, error) {
 
 // Resty Methods
 
-func (o *mistGo) restyPost(url string, body interface{}) (*resty.Response, error) {
+/*func (o *mistGo) restyPost(url string, body interface{}) (*resty.Response, error) {
 	resp, err := o.restClient.R().
 		SetHeader("Accept", "application/json").
 		SetBody(body).
@@ -93,6 +176,7 @@ func (o *mistGo) restyPost(url string, body interface{}) (*resty.Response, error
 	}
 	return resp, nil
 }
+*/
 
 func (o *mistGo) restyGet(url string, queryParams map[string]string) (*resty.Response, error) {
 	resp, err := o.restClient.R().

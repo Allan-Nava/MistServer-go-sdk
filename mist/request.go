@@ -1,7 +1,7 @@
 package mist_go
 
 /*
-	{"authorize":{"username":"","password":""}}
+{"authorize":{"username":"","password":""}}
 */
 type AuthCommand struct {
 	Authorize AuthorizeCommand `json:"authorize"`
@@ -11,6 +11,7 @@ type AuthorizeCommand struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
+
 //
 
 /*
@@ -63,14 +64,14 @@ type PushListCommand struct {
 		"outputs",
 		"views",
 		"viewseconds",
-		"upbytes", 
-		"downbytes", 
+		"upbytes",
+		"downbytes",
 		"packsent",
 		"packloss",
 		"packretrans",
 		"zerounix",
-		"health", 
-		"tracks", 
+		"health",
+		"tracks",
 		"status"
 	]
 }

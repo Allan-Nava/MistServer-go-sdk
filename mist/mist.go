@@ -27,6 +27,9 @@ type IMistGoClient interface {
 	// Stream
 	AddStream(streamName string, source string) (*ResponseBase, error)
 	ActiveStreams() (*ResponseBase, error)
+	AddPush(streamName string, target string) (*ResponseBase, error)
+	ListPush() (*ResponseBase, error)
+	ActiveStreamStatus() (*ResponseBase, error)
 	//
 }
 
@@ -157,6 +160,86 @@ func (o *mistGo) ActiveStreams() (*ResponseBase, error) {
 	}
 	return &obj, nil
 }
+
+
+func (o *mistGo) AddPush(streamName string, target string) (*ResponseBase, error){
+	rBody := &AddPushCommand{
+		PushStart: PushStartCommand{
+			Stream: streamName,
+			Target: target,
+		},
+	}
+	b, err := json.Marshal(rBody)
+	if err != nil {
+		return nil, err
+	}
+	request := map[string]string{
+		"command": string(b),
+	}
+	resp, err := o.restyGet(COMMAND_URL, request)
+	if err != nil {
+		return nil, err
+	}
+	o.debugPrint(resp)
+	//
+	var obj ResponseBase
+	if err := json.Unmarshal(resp.Body(), &obj); err != nil {
+		return nil, err
+	}
+	return &obj, nil
+}
+
+func (o *mistGo) ListPush() (*ResponseBase, error) {
+	rBody := &PushListCommand{
+		PushList: true,
+	}
+	b, err := json.Marshal(rBody)
+	if err != nil {
+		return nil, err
+	}
+	request := map[string]string{
+		"command": string(b),
+	}
+	resp, err := o.restyGet(COMMAND_URL, request)
+	if err != nil {
+		return nil, err
+	}
+	o.debugPrint(resp)
+	//
+	var obj ResponseBase
+	if err := json.Unmarshal(resp.Body(), &obj); err != nil {
+		return nil, err
+	}
+	return &obj, nil
+
+}
+
+func (o *mistGo) ActiveStreamStatus() (*ResponseBase, error) {
+	/*rBody := &ActiveStreamsCommand{
+		ActiveStreams: true,
+	}
+	b, err := json.Marshal(rBody)
+	if err != nil {
+		return nil, err
+	}
+	request := map[string]string{
+		"command": string(b),
+	}
+	resp, err := o.restyGet(COMMAND_URL, request)
+	if err != nil {
+		return nil, err
+	}
+	o.debugPrint(resp)
+	//
+	var obj ResponseBase
+	if err := json.Unmarshal(resp.Body(), &obj); err != nil {
+		return nil, err
+	}
+	return &obj, nil*/
+	return nil, nil
+}
+
+
 
 // Resty Methods
 

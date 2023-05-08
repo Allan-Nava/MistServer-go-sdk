@@ -269,10 +269,5 @@ func (o *mistGo) restyGet(url string, queryParams map[string]string) (*resty.Res
 	if err != nil {
 		return nil, err
 	}
-	if !strings.Contains(resp.Status(), "200") {
-		o.debugPrint(resp)
-		err = fmt.Errorf("%v", resp)
-		return nil, err
-	}
 	return resp, nil
 }

@@ -2,8 +2,6 @@ package mist_go
 
 import (
 	"encoding/json"
-	"fmt"
-	"strings"
 
 	"github.com/go-resty/resty/v2"
 	"gopkg.in/validator.v2"

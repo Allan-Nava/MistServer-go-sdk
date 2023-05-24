@@ -19,6 +19,8 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: ${{ matrix.go-version }}
+        cache-dependency-path: subdir/go.sum
+        cache: true
     #
     - name: Build
       run: go build -v ./...

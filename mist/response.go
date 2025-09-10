@@ -1,22 +1,5 @@
 package mist_go
 
-/*
-	{
-	    "authorize": {
-	        "challenge": "",
-	        "status": "CHALL"
-	    }
-	}
-*/
-type ResponseBase struct {
-	Authorize Authorize `json:"authorize"`
-}
-
-type Authorize struct {
-	Challenge string `json:"challenge"`
-	Status    string `json:"status"`
-}
-
 type AuthorizationResponse struct {
 	Authorize Authorize `json:"authorize"`
 }
@@ -41,6 +24,11 @@ type PostStreamResponse struct {
 type PostPushListResponse struct {
 	BaseResponse
 	PushList [][]any `json:"push_list"`
+}
+
+type Authorize struct {
+	Challenge string `json:"challenge"`
+	Status    string `json:"status"`
 }
 
 type Stream struct {

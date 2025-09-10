@@ -1,78 +1,63 @@
 package mist_go
 
-/*
-{"authorize":{"username":"","password":""}}
-*/
-type AuthCommand struct {
-	Authorize AuthorizeCommand `json:"authorize"`
+type postAuthorizeRequest struct{}
+type healthRequest struct {
+	authorizeRequest
 }
 
-type AuthorizeCommand struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+type PostStreamRequest struct {
+	authorizeRequest
+	AddStream map[string]AddStream `json:"addstream"`
 }
 
-//
-
-/*
-{"capabilities": true }
-*/
-type CapabilitiesCommand struct {
-	Capabilites bool `json:"capabilities"`
+type AddStream struct {
+	Name         string `json:"name"`
+	Source       string `json:"source"`
+	StopSessions bool   `json:"stop_sessions"`
+	DVR          int    `json:"DVR"`
+	Debug        int    `json:"debug"`
 }
 
-/*
-{"addstream": {"ali": {"source": "dtsc://192.168.1.52:4200/live"}}}
-*/
-type AddStreamCommand struct {
-	AddStream map[string]interface{} `json:"addstream"`
+type PostAutoPushRequest struct {
+	authorizeRequest
+	PushAutoAdd PushAutoAdd `json:"push_auto_add"`
 }
 
-/*
-{"active_streams":""}
-*/
-type ActiveStreamsCommand struct {
-	ActiveStreams string `json:"active_streams"`
-}
-
-/*
-{"push_start":{"stream": "","target": "rtmp://",}}
-*/
-type AddPushCommand struct {
-	PushStart PushStartCommand `json:"push_start"`
-}
-type PushStartCommand struct {
+type PushAutoAdd struct {
 	Stream string `json:"stream"`
 	Target string `json:"target"`
 }
 
-/*
-{"push_list":true}
-*/
-type PushListCommand struct {
+type PostAutoPushStopRequest struct {
+	authorizeRequest
+	PushAutoRemove string `json:"push_auto_remove"`
+}
+
+type PostPushListRequest struct {
+	authorizeRequest
 	PushList bool `json:"push_list"`
 }
 
-/*
-{
-	"active_streams": [
-		"clients",
-		"lastms",
-		"firstms",
-		"viewers",
-		"inputs",
-		"outputs",
-		"views",
-		"viewseconds",
-		"upbytes",
-		"downbytes",
-		"packsent",
-		"packloss",
-		"packretrans",
-		"zerounix",
-		"health",
-		"tracks",
-		"status"
-	]
+type PostPushStopRequest struct {
+	authorizeRequest
+	PushStop []int `json:"push_stop"`
 }
-*/
+
+type PostAutoPushRemoveRequest struct {
+	authorizeRequest
+	PushAutoRemove string `json:"push_auto_remove"`
+}
+
+type PostStreamRemoveRequest struct {
+	authorizeRequest
+	DeleteStream string `json:"deletestream"`
+}
+
+type authorizeRequest struct {
+	Authorize authorizeRequestInner `json:"authorize"`
+}
+
+type authorizeRequestInner struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}

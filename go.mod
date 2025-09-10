@@ -2,10 +2,7 @@ module github.com/Allan-Nava/MistServer-go-sdk
 
 go 1.19
 
-require (
-	github.com/go-resty/resty/v2 v2.7.0
-	gopkg.in/validator.v2 v2.0.1
-)
+require github.com/go-resty/resty/v2 v2.7.0
 
 require go.uber.org/multierr v1.10.0 // indirect
 

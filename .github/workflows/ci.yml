@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         # the go.mod floor, plus whatever is current
-        go: ['1.23.x', 'stable']
+        go: ['1.25.x', 'stable']
     steps:
       - uses: actions/checkout@v7
 

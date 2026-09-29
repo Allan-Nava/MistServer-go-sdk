@@ -16,7 +16,7 @@ Use go get to install the library:
 go get github.com/Allan-Nava/MistServer-go-sdk
 ```
 
-Requires Go 1.23 or newer.
+Requires Go 1.25 or newer.
 
 ## Usage
 

@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 Go client for the [MistServer](https://mistserver.org) controller API (the JSON API on port 4242,
-path `/api`). Small library, no binary: two packages. Go 1.23+ (floor set by resty).
+path `/api`). Small library, no binary: two packages. Go 1.25+ (floor set by golang.org/x/net, pulled in by resty).
 
 ## Commands
 

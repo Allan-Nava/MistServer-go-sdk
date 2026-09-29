@@ -1,6 +1,6 @@
 module github.com/Allan-Nava/MistServer-go-sdk
 
-go 1.23.0
+go 1.25.0
 
 require (
 	github.com/go-resty/resty/v2 v2.17.2
@@ -9,5 +9,5 @@ require (
 
 require (
 	go.uber.org/multierr v1.10.0 // indirect
-	golang.org/x/net v0.43.0 // indirect
+	golang.org/x/net v0.58.0 // indirect
 )

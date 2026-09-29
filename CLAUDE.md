@@ -12,7 +12,9 @@ make lint               # golangci-lint v2
 ```
 
 CI (`.github/workflows/ci.yml`) runs tidy check, vet, race tests on the go.mod floor and on
-stable, golangci-lint and govulncheck. Tags `vX.Y.Z` create a GitHub release with generated notes.
+stable, golangci-lint and govulncheck. `main` has a ruleset: those four checks are required and
+direct pushes are refused, except for repository admins and GitHub Actions (the contributors
+workflow commits the README list straight to `main`). Tags `vX.Y.Z` create a GitHub release with generated notes.
 Renovate (not Dependabot) keeps modules and actions current.
 
 ## Layout
@@ -34,7 +36,9 @@ Renovate (not Dependabot) keeps modules and actions current.
   - `request.go` / `response.go` — JSON payloads. Exported request types embed the unexported
     `authorizeRequest`, which the service fills in; callers never set it.
 - `lib/util.go` — `GenerateMD5`, used only by the auth handshake.
-- `docs/` — GitHub Pages site, served from `main:/docs` (static HTML, `.nojekyll`, no build step).
+- `docs/` — GitHub Pages site: static HTML, no build step, no third-party resources (system
+  fonts only — keep it that way). Deployed by `.github/workflows/pages.yml` on every push to
+  `main` that touches `docs/`; run it by hand with `gh workflow run pages.yml`.
 
 ## How a call works
 
@@ -85,8 +89,16 @@ the MistServer API docs: https://docs.mistserver.org/mistserver/integration/api/
 - `NewService` defaults a nil resty client to `resty.New()` and a nil logger to `zap.NewNop()`.
 - The logger is a `*zap.SugaredLogger`: key/value calls need the `…w` variants (`Errorw`,
   `Warnw`). Plain `Error("msg", "error", err)` just concatenates.
-- `AddStream` fields are `omitempty`, so zero values are not sent and don't overwrite settings
-  on an existing stream. The flip side: you can't explicitly send `DVR: 0`.
+- **`addstream` / `streams` replace a stream's whole config** (`AddStreams` in
+  `controller_streams.cpp` assigns the object as sent). Anything not sent is removed, so every
+  other setting goes in `AddStream.Options`. The typed fields are `omitempty` only to avoid sending
+  values nobody set; that does *not* preserve anything. `StopSessions` is lifted to a top-level
+  `stop_sessions` member, the only place the controller reads it.
+- `config_restore` replaces the entire server state (`Storage.assignFrom`); `PostConfigRestore`
+  refuses anything that isn't a JSON object.
+- `Stream` and `Config` decode leniently (`lenient.go`): the server stores their members
+  verbatim, so a wrongly-typed member only zeroes that field instead of failing the whole call.
+  Keep new always-sent types lenient too.
 - `PostAutoPushStopRequest` is deprecated (duplicate of `PostAutoPushRemoveRequest`); kept only
   because it's exported.
 - Raising the Go floor in `go.mod` means updating the first entry of the CI matrix too.

@@ -3,11 +3,18 @@ package mist_go
 import "fmt"
 
 // StreamsRequest replaces the whole list of configured streams ("streams").
-// Streams missing from the map are deleted; a nil map is rejected with
-// ErrInvalidRequest because MistServer would delete every stream.
+// Streams missing from the map are deleted, so an empty map deletes every
+// stream. A nil map is rejected with ErrInvalidRequest: MistServer would
+// ignore it, which is never what the caller meant.
 type StreamsRequest struct {
 	authorizeRequest
 	Streams map[string]AddStream `json:"streams"`
+}
+
+type streamsWire struct {
+	authorizeRequest
+	Streams      map[string]AddStream `json:"streams"`
+	StopSessions map[string]string    `json:"stop_sessions,omitempty"`
 }
 
 // DeleteStreamSourceRequest deletes streams and, where unambiguous, their
@@ -70,9 +77,12 @@ type StreamTagsResponse struct {
 
 func (s *service) PostStreams(request StreamsRequest) (*Response, error) {
 	if request.Streams == nil {
-		return nil, fmt.Errorf("%w: nil Streams would delete every configured stream; pass an empty map to do that on purpose", ErrInvalidRequest)
+		return nil, fmt.Errorf("%w: nil Streams (MistServer ignores it); pass an empty map to delete every stream", ErrInvalidRequest)
 	}
-	return doAuthorized[Response](s, request)
+	return doAuthorized[Response](s, streamsWire{
+		Streams:      request.Streams,
+		StopSessions: stopSessionsFor(request.Streams),
+	})
 }
 
 func (s *service) PostDeleteStreamSource(request DeleteStreamSourceRequest) (*DeleteStreamSourceResponse, error) {

@@ -149,7 +149,8 @@ type ProcListRequest struct {
 }
 
 // Process is one entry of a proc_list reply. Terminated processes are listed
-// once and then forgotten.
+// once and then forgotten. MistServer also merges per-process statistics
+// into each entry; use PostRaw to read those.
 type Process struct {
 	Source     string `json:"source"`
 	Sink       string `json:"sink"`
@@ -194,10 +195,14 @@ type CPUInfo struct {
 
 // LoadInfo is the system load as reported by MistServer.
 type LoadInfo struct {
-	One     int `json:"one"`
-	Five    int `json:"five"`
-	Fifteen int `json:"fifteen"`
-	Memory  int `json:"memory"`
+	One     int     `json:"one"`     // 1-minute load average × 100
+	Five    int     `json:"five"`    // 5-minute load average × 100
+	Fifteen int     `json:"fifteen"` // 15-minute load average × 100
+	Mem     float64 `json:"mem"`     // memory in use, percent
+	Shm     float64 `json:"shm"`     // shared memory in use, percent
+	// Deprecated: MistServer never sends "memory" (the docs are wrong), so
+	// this is always 0. Use Mem.
+	Memory int `json:"memory"`
 }
 
 // MemInfo is memory usage in MiB.

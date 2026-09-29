@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
@@ -161,6 +162,9 @@ func TestHTTPErrorIsReturned(t *testing.T) {
 	}
 }
 
+// Zero-valued fields are omitted rather than sent as 0/false. This does not
+// preserve existing settings — addstream replaces the whole stream config —
+// it only avoids sending values nobody set.
 func TestAddStreamOmitsZeroValues(t *testing.T) {
 	f := &fakeMist{username: "admin", password: "secret", challenge: "c1"}
 	c := newTestClient(t, f, "secret")
@@ -282,5 +286,38 @@ func TestConcurrentCallsShareOneLogin(t *testing.T) {
 	}
 	if f.challenges != 1 {
 		t.Errorf("challenge requests = %d, want 1", f.challenges)
+	}
+}
+
+func TestRepliesTolerateUnexpectedFieldTypes(t *testing.T) {
+	// MistServer stores stream and config members verbatim (addstream,
+	// config, config_restore), and non-minimal replies always include them.
+	// One odd value must not make every call fail to decode.
+	f := &fakeMist{username: "admin", password: "secret", challenge: "c1", reply: `{
+	  "authorize": {"status": "OK"},
+	  "config": {"trustedproxy": "10.0.0.1", "sessionViewerMode": "14", "version": "3.4", "time": 1790000000},
+	  "streams": {"live": {"name": "live", "source": "push://", "online": 1, "stop_sessions": 1, "debug": "3"}}
+	}`}
+	c := newTestClient(t, f, "secret")
+
+	resp, err := c.Health()
+	if err != nil {
+		t.Fatalf("Health: %v", err)
+	}
+	if resp.Config.Version != "3.4" || resp.Config.Time != 1790000000 {
+		t.Errorf("config = %+v, want the well-typed fields decoded", resp.Config)
+	}
+	if s := resp.Streams["live"]; s.Online != 1 || s.Source != "push://" {
+		t.Errorf("stream = %+v, want the well-typed fields decoded", s)
+	}
+}
+
+func TestHTTPErrorIncludesStatus(t *testing.T) {
+	f := &fakeMist{status: http.StatusBadGateway}
+	c := newTestClient(t, f, "secret")
+
+	_, err := c.Health()
+	if err == nil || !strings.Contains(err.Error(), "502") {
+		t.Fatalf("err = %v, want it to mention HTTP 502", err)
 	}
 }

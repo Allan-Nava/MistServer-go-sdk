@@ -12,9 +12,6 @@
 <meta name="theme-color" content="#0b1117">
 <script>try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2300ADD8'/%3E%3Cpath d='M8 21c2-5 4-8 8-8s6 3 8 8' stroke='%230b1117' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='11' r='2.5' fill='%230b1117'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #f7f9fb;
@@ -419,8 +416,8 @@ _, err = client.<span class="f">PostAutoPush</span>(mist.<span class="t">PostAut
           <tbody>
             <tr class="group"><th colspan="3">Streams</th></tr>
             <tr><td class="m">Health()</td><td><span class="cmd">authorize</span></td><td class="d">Logs in; returns server config, configured streams and the recent log.</td></tr>
-            <tr><td class="m">PostStream(req)</td><td><span class="cmd">addstream</span></td><td class="d">Creates or updates streams. Zero values are not sent.</td></tr>
-            <tr><td class="m">PostStreams(req)</td><td><span class="cmd">streams</span></td><td class="d">Replaces the whole stream list. A nil map is refused.</td></tr>
+            <tr><td class="m">PostStream(req)</td><td><span class="cmd">addstream</span></td><td class="d">Creates or updates streams; an update replaces the stream's whole config.</td></tr>
+            <tr><td class="m">PostStreams(req)</td><td><span class="cmd">streams</span></td><td class="d">Replaces the whole stream list; an empty map deletes every stream.</td></tr>
             <tr><td class="m">PostStreamRemove(req)</td><td><span class="cmd">deletestream</span></td><td class="d">Deletes a stream.</td></tr>
             <tr><td class="m">PostDeleteStreamSource(req)</td><td><span class="cmd">deletestreamsource</span></td><td class="d">Deletes streams and their source files.</td></tr>
             <tr><td class="m">PostNukeStream(req)</td><td><span class="cmd">nuke_stream</span></td><td class="d">Force-stops a stream and cleans up its memory.</td></tr>

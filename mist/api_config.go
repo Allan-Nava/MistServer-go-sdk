@@ -1,9 +1,13 @@
 package mist_go
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // ConfigRequest changes core server settings ("config"). Only the members
-// given are changed; null resets one to its default. "protocols" replaces all
+// given are changed. null resets debug and triggers to their defaults; for
+// the session modes it is stored as-is and read as 0 until a restart. "protocols" replaces all
 // outputs — use PostAddProtocol / PostDeleteProtocol / PostUpdateProtocol to
 // change them one at a time.
 type ConfigRequest struct {
@@ -52,8 +56,12 @@ type ConfigBackupResponse struct {
 	ConfigBackup json.RawMessage `json:"config_backup"`
 }
 
-// ConfigRestoreRequest replaces the full configuration ("config_restore").
-// It runs before any other command in the same request.
+// ConfigRestoreRequest replaces the full configuration ("config_restore"):
+// accounts, config, streams, pushes, keys and variables all come from
+// ConfigRestore, which must be a JSON object such as a PostConfigBackup
+// reply. Anything else returns ErrInvalidRequest without contacting the
+// server, since MistServer would wipe its configuration. It runs before any
+// other command in the same request.
 type ConfigRestoreRequest struct {
 	authorizeRequest
 	ConfigRestore json.RawMessage `json:"config_restore"`
@@ -164,9 +172,9 @@ type UpdateInfo struct {
 	Release     string   `json:"release"`
 	Version     string   `json:"version"`
 	Date        string   `json:"date"`
-	UpToDate    int      `json:"uptodate"` // 1 when up to date
-	NeedsUpdate []string `json:"needs_update"`
-	Progress    int      `json:"progress"` // percent, only while updating
+	UpToDate    int      `json:"uptodate"`     // 1 when up to date
+	NeedsUpdate []string `json:"needs_update"` // not filled by current MistServer releases
+	Progress    int      `json:"progress"`     // percent, only while updating
 }
 
 // UpdateResponse is the reply to PostUpdate and PostAutoUpdate.
@@ -196,6 +204,10 @@ func (s *service) PostConfigBackup() (*ConfigBackupResponse, error) {
 }
 
 func (s *service) PostConfigRestore(request ConfigRestoreRequest) error {
+	var cfg map[string]json.RawMessage
+	if err := json.Unmarshal(request.ConfigRestore, &cfg); err != nil || cfg == nil {
+		return fmt.Errorf("%w: ConfigRestore must be a JSON object, or MistServer wipes its configuration", ErrInvalidRequest)
+	}
 	return doNoReply(s, request)
 }
 

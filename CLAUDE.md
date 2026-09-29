@@ -20,10 +20,17 @@ Renovate (not Dependabot) keeps modules and actions current.
 - `mist/` — the SDK. **Package name is `mist_go`**, directory is `mist`, so callers import it as
   `mist "github.com/Allan-Nava/MistServer-go-sdk/mist"`. Don't rename one without the other — it is
   a breaking change for every importer.
-  - `mist.go` — `IMistGoClient` interface, `NewService`, auth, `doAuthorized` and `postRequest`.
+  - `mist.go` — `IMistGoClient` interface (grouped by area), `NewService`, auth, `doAuthorized`,
+    `doNoReply` and `postRequest`.
+  - `api_streams.go`, `api_stats.go`, `api_push_sessions.go`, `api_config.go`,
+    `api_security.go`, `api_variables.go`, `api_raw.go` — one file per area of the API: request
+    and response types plus the `*service` methods. The original seven commands still live in
+    `request.go` / `response.go`.
   - `configuration.go` — functional options (`WithBaseURL`, `WithUsername`, `WithPassword`).
-  - `example_test.go` — runnable `Example…` functions (package `mist_go_test`), shown on
-    pkg.go.dev and executed by `go test`. The fake server is the unexported `apiURL()` helper.
+  - `example_test.go`, `example_commands_test.go` — runnable `Example…` functions (package
+    `mist_go_test`), shown on pkg.go.dev and executed by `go test`. The fake server is the
+    unexported `apiURL()` helper; add a `cannedReplies` entry for any command with a reply.
+  - `commands_test.go` — table of `commandCase`s: exact wire request + decoded reply per method.
   - `request.go` / `response.go` — JSON payloads. Exported request types embed the unexported
     `authorizeRequest`, which the service fills in; callers never set it.
 - `lib/util.go` — `GenerateMD5`, used only by the auth handshake.
@@ -43,11 +50,18 @@ Auth is MistServer's challenge scheme: an empty POST returns `authorize.challeng
 sent is `md5(md5(password) + challenge)`. The result is cached for one minute behind a mutex
 (`lastAuthorized`). MD5 is mandated by the MistServer protocol — don't "upgrade" it.
 
-To add an endpoint: request struct embedding `authorizeRequest` with the MistServer command as its
-JSON tag (`request.go`), a response type embedding `BaseResponse` if the reply isn't `Response`
-(`response.go`) — embedding it is what makes the status check work — and a one-line method on
-`IMistGoClient` + `*service` (`mist.go`). Add a case to `mist_test.go` and an
-`Example<RequestType>` to `example_test.go`. The command names come from
+To add an endpoint, in the `api_*.go` file for its area:
+- Request: a struct embedding `authorizeRequest` with the command as its JSON tag. When the
+  command takes several shapes (`true` to read vs an object to write, name lists vs field lists),
+  expose a plain options struct and build an unexported `…Wire` struct in the method — see
+  `StreamTagsRequest` / `streamTagsWire`. Commands with no parameters get an unexported request
+  type with a `bool` set to `true`.
+- Response: a type embedding `BaseResponse` (that is what makes the status check work). Commands
+  MistServer sends no reply member for return only `error`, via `doNoReply`.
+- A one-line method on `IMistGoClient` (with a doc comment naming the command) + `*service`.
+- A `commandCase` in `commands_test.go` first (red), an `Example<RequestType>` (or
+  `Example<ResponseType>` / `ExampleNewService_<name>` when there is no request type), and a row
+  in the site's API table. The command names come from
 the MistServer API docs: https://docs.mistserver.org/mistserver/integration/api/
 
 ## Gotchas
@@ -57,6 +71,16 @@ the MistServer API docs: https://docs.mistserver.org/mistserver/integration/api/
   `postRequest` sets the header per request for that reason; don't drop it.
 - Replies to `addstream`/`deletestream` put `"incomplete list": 1` inside `streams`, which is why
   `PostStreamResponse.Streams` is `any` and not `map[string]Stream`.
+- **The MistServer docs are wrong in places; the controller source is right.** Found so far:
+  `browse` takes a path string, not `{"path": …}`; the external writer list comes back as
+  `external_writer_list`, not `variable_list`; the log-clearing key is `clearstatlogs`, not
+  `clearstatlog`; and the `stop_sessions` array form is read as *protocol* names (the iterator key
+  is empty), so `StopSessionsRequest` uses the object form. Check the handler in
+  `controller_api.cpp` before trusting a docs page.
+- `inject_scte35` is documented but absent from the open-source controller (master and 3.11.2),
+  so it has no method; `PostRaw` can send it.
+- `streams`, `streamkeys` and `jwks` with a value *replace everything*. `PostStreams` refuses a nil
+  map (`ErrInvalidRequest`); for `PostStreamKeys` / `PostJWKS` nil means "read only".
 
 - `NewService` defaults a nil resty client to `resty.New()` and a nil logger to `zap.NewNop()`.
 - The logger is a `*zap.SugaredLogger`: key/value calls need the `…w` variants (`Errorw`,

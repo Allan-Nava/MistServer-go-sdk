@@ -166,6 +166,46 @@ func newClient() mist.IMistGoClient {
 	)
 }
 
+// cannedReplies maps a request member to the reply members the fake sends
+// back for it, shaped like the MistServer controller's replies.
+var cannedReplies = map[string]map[string]any{
+	"push_list":          {"push_list": [][]any{{412, "live", "rtmp://ingest.example.com/app/KEY", "rtmp://ingest.example.com/app/KEY"}}},
+	"deletestreamsource": {"deletestreamsource": []string{"-2: Stream and source file deleted"}},
+	"stream_tags":        {"stream_tags": map[string]any{"live": []string{"record"}}},
+	"active_streams":     {"active_streams": map[string]any{"live": map[string]any{"viewers": 3, "lastms": 120000}}},
+	"stats_streams":      {"stats_streams": map[string]any{"live": []int{2}}},
+	"clients": {"clients": map[string]any{"time": 1790000000, "fields": []string{"host", "protocol"},
+		"data": [][]any{{"203.0.113.7", "HLS"}}}},
+	"totals": {"totals": map[string]any{"start": 1790000000, "end": 1790000060, "fields": []string{"clients"},
+		"interval": [][]int{{12, 5}}, "data": [][]int{{4}, {5}}}},
+	"proc_list": {"proc_list": map[string]any{"4321": map[string]any{"source": "live", "sink": "live_720p", "process": "AV"}}},
+	"capabilities": {"capabilities": map[string]any{"connectors": map[string]any{"HLS": map[string]any{}, "RTMP": map[string]any{}},
+		"inputs": map[string]any{"Buffer": map[string]any{}}, "cpu_use": 125, "threads": 8,
+		"mem": map[string]any{"total": 7898, "used": 3370}}},
+	"push_auto_list": {"auto_push": map[string]any{"71d6b51b": map[string]any{"stream": "live", "target": "/rec/$stream.mkv"}}},
+	"push_settings":  {"push_settings": map[string]any{"wait": 5, "maxspeed": 0}},
+	"config_backup":  {"config_backup": map[string]any{"streams": map[string]any{"live": map[string]any{"source": "push://"}}}},
+	"ui_settings":    {"ui_settings": map[string]any{"theme": "dark"}},
+	"api_endpoint":   {"api_endpoint": "http://127.0.0.1:4242/"},
+	"browse": {"browse": map[string]any{"path": []string{"/media"}, "files": []string{"a.mp4", "b.mkv"},
+		"subdirectories": []string{"archive"}}},
+	"shutdown":               {"shutdown": "Ignored - only local users may request shutdown"},
+	"update":                 {"update": map[string]any{"version": "3.5", "uptodate": 0}},
+	"autoupdate":             {"update": map[string]any{"version": "3.5", "uptodate": 0, "progress": 1}},
+	"streamkeys":             {"streamkeys": map[string]string{"UhFQ4DSY": "live"}},
+	"streamkey_add":          {"streamkey_add": map[string]any{"added": []string{"UhFQ4DSY"}}},
+	"streamkey_del":          {"streamkey_del": map[string]any{"deleted": []string{"UhFQ4DSY"}}},
+	"jwks":                   {"jwks": []any{[]any{map[string]any{"kid": "k1"}, map[string]any{"input": true, "stream": "*"}}}},
+	"addjwks":                {"addjwks": []any{"https://issuer.example.com/.well-known/jwks.json"}},
+	"deletejwks":             {"deletejwks": []any{map[string]any{"kid": "k1"}}},
+	"variable_list":          {"variable_list": map[string]any{"region": map[string]any{"value": "eu-south"}}},
+	"variable_add":           {"variable_list": map[string]any{"region": map[string]any{"value": "eu-south"}}},
+	"variable_remove":        {"variable_list": map[string]any{}},
+	"external_writer_list":   {"external_writer_list": []any{[]any{"s3", "/usr/local/bin/s3-upload", []string{"s3"}}}},
+	"external_writer_add":    {"external_writer_list": []any{[]any{"s3", "/usr/local/bin/s3-upload", []string{"s3"}}}},
+	"external_writer_remove": {"external_writer_list": []any{}},
+}
+
 // apiURL starts a fake MistServer and returns its API URL. It speaks just
 // enough of the protocol for the examples: the challenge login and canned
 // replies for each command.
@@ -194,8 +234,10 @@ func apiURL() string {
 				"live": map[string]any{"name": "live", "source": "push://", "online": 1},
 			},
 		}
-		if _, ok := req["push_list"]; ok {
-			reply["push_list"] = [][]any{{412, "live", "rtmp://ingest.example.com/app/KEY", "rtmp://ingest.example.com/app/KEY"}}
+		for member := range req {
+			for k, v := range cannedReplies[member] {
+				reply[k] = v
+			}
 		}
 		_ = json.NewEncoder(w).Encode(reply)
 	}))

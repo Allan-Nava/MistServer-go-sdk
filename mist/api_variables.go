@@ -8,7 +8,8 @@ import (
 // Variable is a custom variable usable as $name in targets and triggers. A
 // static variable only has Value; a dynamic one has Target (a command or URL)
 // re-evaluated every Interval seconds, waiting at most WaitTime seconds.
-// Names longer than 31 characters are truncated by MistServer.
+// Names longer than 31 characters are truncated by MistServer. Name is only
+// used in requests; in replies the name is the map key.
 type Variable struct {
 	Name     string  `json:"name,omitempty"`
 	Target   string  `json:"target,omitempty"`

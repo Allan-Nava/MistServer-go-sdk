@@ -56,11 +56,18 @@ func ExampleNewService_health() {
 func ExamplePostStreamRequest() {
 	client := newClient()
 
-	// Creates the stream, or updates it if it exists. Zero-valued fields
-	// (DVR, Debug, StopSessions) are not sent, so they don't reset settings.
+	// Creates the stream, or replaces its configuration if it exists: send
+	// every setting it should keep, typed fields plus anything in Options.
 	_, err := client.PostStream(mist.PostStreamRequest{
 		AddStream: map[string]mist.AddStream{
-			"live": {Name: "live", Source: "push://", DVR: 30000},
+			"live": {
+				Name:    "live",
+				Source:  "push://",
+				DVR:     30000,
+				Options: map[string]any{"always_on": true},
+				// Disconnect current viewers so they reconnect with the new settings.
+				StopSessions: true,
+			},
 		},
 	})
 	if err != nil {

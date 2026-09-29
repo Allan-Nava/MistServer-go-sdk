@@ -25,11 +25,15 @@ type service struct {
 // reply's authorize.status is not "OK". A "CHALL" reply is retried once with a
 // fresh challenge first; "NOACC" (no accounts configured) is not retried.
 // The wrapped message includes the status.
+//
+// On a local connection to a server with no accounts, MistServer runs the
+// command but still answers NOACC, so the SDK reports ErrUnauthorized for a
+// command that did run. Configure an account to avoid this.
 var ErrUnauthorized = errors.New("mistserver: unauthorized")
 
 // ErrInvalidRequest is returned, without contacting the server, for a request
-// that MistServer would accept but that is almost certainly a mistake, such as
-// a nil stream list that would delete every stream.
+// that is almost certainly a mistake, such as an empty config_restore that
+// would wipe the whole server configuration.
 var ErrInvalidRequest = errors.New("mistserver: invalid request")
 
 const (
@@ -44,8 +48,8 @@ type IMistGoClient interface {
 	// Health logs in and returns the server config, the configured streams
 	// and the recent log. Use it as a liveness and credentials check.
 	Health() (*Response, error)
-	// PostStream creates or updates streams ("addstream"). Zero-valued
-	// AddStream fields are not sent, so existing settings are kept.
+	// PostStream creates or updates streams ("addstream"). An update
+	// replaces the stream's whole configuration: see AddStream.
 	PostStream(request PostStreamRequest) (*PostStreamResponse, error)
 	// PostStreamRemove deletes a stream by name ("deletestream").
 	PostStreamRemove(request PostStreamRemoveRequest) (*PostStreamResponse, error)
@@ -65,7 +69,8 @@ type IMistGoClient interface {
 	// --- streams and stream tags
 
 	// PostStreams replaces the whole stream list ("streams"); streams not in
-	// the map are deleted. A nil map returns ErrInvalidRequest.
+	// the map are deleted, so an empty map deletes them all. A nil map
+	// returns ErrInvalidRequest.
 	PostStreams(request StreamsRequest) (*Response, error)
 	// PostDeleteStreamSource deletes streams and their source files where
 	// unambiguous ("deletestreamsource").
@@ -151,8 +156,9 @@ type IMistGoClient interface {
 	// PostShutdown shuts the controller down; honoured only over a local
 	// connection ("shutdown").
 	PostShutdown(request ShutdownRequest) (*ShutdownResponse, error)
-	// PostLogout drops the login on the current connection ("logout",
-	// MistServer 3.9.1+). The SDK logs in again on the next call.
+	// PostLogout drops the login on the current HTTP connection ("logout",
+	// MistServer 3.9.1+). It does not end anything for the SDK: the next call
+	// sends the cached login again and is authorized straight away.
 	PostLogout() error
 	// PostClearStatLogs truncates the server log ("clearstatlogs").
 	PostClearStatLogs() error
@@ -264,8 +270,17 @@ func (s *service) Health() (*Response, error) {
 	return doAuthorized[Response](s, healthRequest{})
 }
 
+type postStreamWire struct {
+	authorizeRequest
+	AddStream    map[string]AddStream `json:"addstream"`
+	StopSessions map[string]string    `json:"stop_sessions,omitempty"`
+}
+
 func (s *service) PostStream(request PostStreamRequest) (*PostStreamResponse, error) {
-	return doAuthorized[PostStreamResponse](s, request)
+	return doAuthorized[PostStreamResponse](s, postStreamWire{
+		AddStream:    request.AddStream,
+		StopSessions: stopSessionsFor(request.AddStream),
+	})
 }
 
 func (s *service) PostStreamRemove(request PostStreamRemoveRequest) (*PostStreamResponse, error) {
@@ -352,7 +367,7 @@ func postRequest[T any, R any](s *service, request T) (*R, error) {
 	}
 
 	if r.IsError() {
-		return &response, errors.New(r.String())
+		return nil, fmt.Errorf("mistserver: HTTP %d: %s", r.StatusCode(), r.String())
 	}
 
 	err = json.Unmarshal(r.Body(), &response)

@@ -4,8 +4,6 @@ type AuthorizationResponse struct {
 	Authorize Authorize `json:"authorize"`
 }
 
-func (a *AuthorizationResponse) authorizeStatus() string { return a.Authorize.Status }
-
 type BaseResponse struct {
 	LTS       int             `json:"LTS"`
 	Authorize Authorize       `json:"authorize"`

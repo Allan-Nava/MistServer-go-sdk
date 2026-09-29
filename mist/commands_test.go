@@ -261,11 +261,16 @@ func TestStatsCommands(t *testing.T) {
 			request: `{"capabilities":true}`,
 			reply: `{"capabilities":{"connectors":{"HLS":{"name":"HLS"}},"inputs":{"Buffer":{"name":"Buffer"}},
 				"cpu_use":500,"cpu":[{"cores":4,"mhz":1645,"model":"x","threads":8}],
-				"load":{"one":124,"five":81,"fifteen":72,"memory":42},
+				"load":{"one":124,"five":81,"fifteen":72,"mem":42.7,"shm":3.1},
 				"mem":{"total":7898,"used":3370,"free":2539,"cached":1989,"swaptotal":0,"swapfree":0},
 				"speed":6580,"threads":8}}`,
 			check: func(t *testing.T, r any) {
 				cp := r.(*CapabilitiesResponse).Capabilities
+				// controller_capabilities.cpp sends load.mem / load.shm as doubles;
+				// the docs' "memory" key does not exist.
+				if cp.Load.Mem != 42.7 || cp.Load.Shm != 3.1 {
+					t.Errorf("load = %+v, want mem 42.7 shm 3.1", cp.Load)
+				}
 				if cp.CPUUse != 500 || cp.Mem.Total != 7898 || cp.Load.One != 124 || len(cp.CPU) != 1 {
 					t.Errorf("capabilities = %+v", cp)
 				}
@@ -773,4 +778,61 @@ func TestOriginalCommands(t *testing.T) {
 			request: `{"push_stop":[412]}`,
 		},
 	})
+}
+
+// ---------------------------------------------------------------- audit fixes
+
+func TestStreamWritesSendTheFullStreamObject(t *testing.T) {
+	// addstream/streams replace a stream's whole config (AddStreams in
+	// controller_streams.cpp), so callers must be able to send every setting,
+	// not only the typed ones. stop_sessions is only read as a top-level
+	// command, so the SDK lifts it out of the stream.
+	live := AddStream{
+		Name: "live", Source: "push://", DVR: 30000, StopSessions: true,
+		Options: map[string]any{"always_on": true, "tags": []string{"record"}},
+	}
+	runCommandCases(t, []commandCase{
+		{
+			name: "addstream",
+			call: func(c IMistGoClient) (any, error) {
+				return c.PostStream(PostStreamRequest{AddStream: map[string]AddStream{"live": live}})
+			},
+			request: `{"addstream":{"live":{"name":"live","source":"push://","DVR":30000,"always_on":true,"tags":["record"]}},
+				"stop_sessions":{"live":""}}`,
+		},
+		{
+			name: "streams",
+			call: func(c IMistGoClient) (any, error) {
+				return c.PostStreams(StreamsRequest{Streams: map[string]AddStream{"live": live}})
+			},
+			request: `{"streams":{"live":{"name":"live","source":"push://","DVR":30000,"always_on":true,"tags":["record"]}},
+				"stop_sessions":{"live":""}}`,
+		},
+		{
+			name: "typed fields win over Options",
+			call: func(c IMistGoClient) (any, error) {
+				return c.PostStream(PostStreamRequest{AddStream: map[string]AddStream{
+					"live": {Name: "live", Source: "push://", Options: map[string]any{"source": "ignored"}},
+				}})
+			},
+			request: `{"addstream":{"live":{"name":"live","source":"push://"}}}`,
+		},
+	})
+}
+
+func TestConfigRestoreRefusesEmptyOrNonObject(t *testing.T) {
+	// config_restore replaces the entire server state (Storage.assignFrom); a
+	// null or non-object value would wipe accounts, config and keys.
+	for _, cfg := range []json.RawMessage{nil, json.RawMessage(``), json.RawMessage(`null`), json.RawMessage(`[1]`)} {
+		f := &fakeMist{username: "admin", password: "secret", challenge: "c1"}
+		c := newTestClient(t, f, "secret")
+
+		err := c.PostConfigRestore(ConfigRestoreRequest{ConfigRestore: cfg})
+		if !errors.Is(err, ErrInvalidRequest) {
+			t.Errorf("config %q: err = %v, want ErrInvalidRequest", cfg, err)
+		}
+		if f.requests != 0 {
+			t.Errorf("config %q: requests = %d, want 0", cfg, f.requests)
+		}
+	}
 }

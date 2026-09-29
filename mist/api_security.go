@@ -69,7 +69,8 @@ type JWK struct {
 }
 
 // JWKPermissions says what a key may be used for. Stream is "*", a stream
-// name, or a list of stream names.
+// name, or a list of stream names. All three booleans are always sent, so set
+// each one you want true.
 type JWKPermissions struct {
 	Input  bool `json:"input"`
 	Output bool `json:"output"`
@@ -100,8 +101,9 @@ type jwksWire struct {
 	JWKS any `json:"jwks"`
 }
 
-// JWKSResponse holds the configured keys, each as stored: a key object, a
-// [key, permissions] pair or a URL.
+// JWKSResponse holds the configured keys. Reads return each one as a
+// [key, permissions] pair, with MistServer's default permissions filled in
+// (URLs included).
 type JWKSResponse struct {
 	BaseResponse
 	JWKS []json.RawMessage `json:"jwks"`

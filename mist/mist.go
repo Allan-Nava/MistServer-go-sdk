@@ -21,8 +21,10 @@ type service struct {
 	lastAuthorizeRequest *authorizeRequest
 }
 
-// ErrUnauthorized is returned when MistServer rejects the credentials, i.e.
-// authorize.status is not "OK" even after a fresh challenge.
+// ErrUnauthorized is returned when MistServer rejects the login, i.e. the
+// reply's authorize.status is not "OK". A "CHALL" reply is retried once with a
+// fresh challenge first; "NOACC" (no accounts configured) is not retried.
+// The wrapped message includes the status.
 var ErrUnauthorized = errors.New("mistserver: unauthorized")
 
 const (
@@ -30,16 +32,30 @@ const (
 	authorizeStatusChallenge = "CHALL"
 )
 
+// IMistGoClient is a client for the MistServer controller API. Every method
+// logs in on its own (challenge-response, cached for a minute) and returns
+// ErrUnauthorized if MistServer rejects the credentials.
 type IMistGoClient interface {
-	//
+	// Health logs in and returns the server config, the configured streams
+	// and the recent log. Use it as a liveness and credentials check.
 	Health() (*Response, error)
+	// PostStream creates or updates streams ("addstream"). Zero-valued
+	// AddStream fields are not sent, so existing settings are kept.
 	PostStream(request PostStreamRequest) (*PostStreamResponse, error)
+	// PostStreamRemove deletes a stream by name ("deletestream").
 	PostStreamRemove(request PostStreamRemoveRequest) (*PostStreamResponse, error)
+	// PostAutoPush adds a rule that pushes a stream to a target every time
+	// it comes online ("push_auto_add").
 	PostAutoPush(request PostAutoPushRequest) (*Response, error)
+	// PostAutoPushRemove removes auto-push rules ("push_auto_remove"); a
+	// stream name removes every rule for that stream.
 	PostAutoPushRemove(request PostAutoPushRemoveRequest) (*Response, error)
+	// PostPushStop stops running pushes by ID ("push_stop"); IDs are the
+	// first element of each PostPushList entry.
 	PostPushStop(request PostPushStopRequest) (*Response, error)
+	// PostPushList lists the pushes running now ("push_list"). Each entry is
+	// [id, stream, original target, resolved target, ...].
 	PostPushList(request PostPushListRequest) (*PostPushListResponse, error)
-	//
 }
 
 // NewService returns a client for the MistServer API at the configured base URL.

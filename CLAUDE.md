@@ -90,3 +90,15 @@ the MistServer API docs: https://docs.mistserver.org/mistserver/integration/api/
   `mist_test.go` (challenge round-trip, NOACC, the Content-Type rule) — never a real MistServer.
 - The Pages site in `docs/` documents the API by hand — update its endpoint table when the
   interface changes.
+
+## Definition of done
+
+A change is finished only when everything downstream is updated in the same PR, unprompted:
+
+1. Test first, then the fix; an `Example…` for any public API change (see Conventions).
+2. Doc comments on what changed; README, `docs/index.html` (endpoint table, quickstart, auth
+   section) and this file — grep them for anything the change made stale.
+3. `make test && make lint` green, CI green on the PR.
+4. After merge and a tag (the user decides when to tag): the release workflow succeeded, the Go
+   proxy serves the version, and pkg.go.dev lists it with its examples. If pkg.go.dev 404s on the
+   new version, request it: `curl -X POST https://pkg.go.dev/fetch/github.com/Allan-Nava/MistServer-go-sdk@vX.Y.Z/mist`.

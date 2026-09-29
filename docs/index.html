@@ -434,6 +434,7 @@ _, err = client.<span class="f">PostAutoPush</span>(mist.<span class="t">PostAut
         <p class="kicker">Auth</p>
         <h2>Challenge-response, done once a minute</h2>
         <p class="section-lede" style="margin-bottom:0">MistServer never receives the plain password. The first request fetches a challenge; the SDK answers with <code>md5(md5(password) + challenge)</code> and reuses that answer for the next 60 seconds, behind a mutex, so concurrent calls share it.</p>
+        <p class="section-lede" style="margin:16px 0 0">MistServer replies HTTP 200 even to a rejected login, so the SDK checks <code>authorize.status</code> on every reply. A stale challenge (it rolls over daily) is retried once; wrong credentials, or a server with no accounts, return <code>mist.ErrUnauthorized</code>.</p>
         <p class="note">MD5 is what the MistServer protocol specifies. Put the API behind TLS or a private network if it leaves the host.</p>
       </div>
       <div class="diagram reveal">

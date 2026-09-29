@@ -366,7 +366,7 @@ _, err = client.<span class="f">PostAutoPush</span>(mist.<span class="t">PostAut
       <p class="section-lede">The controller API usually listens on <code>:4242/api</code>. Point the client at it with the admin credentials you set in MistServer.</p>
       <div class="steps">
         <ol class="step-list">
-          <li><b>Install</b><span><code>go get</code> the module. Go 1.19 or newer.</span></li>
+          <li><b>Install</b><span><code>go get</code> the module. Go 1.23 or newer.</span></li>
           <li><b>Configure</b><span>Pass a resty client, a sugared zap logger, and the <code>With…</code> options.</span></li>
           <li><b>Call</b><span>Every method logs in on its own; you just send the request.</span></li>
         </ol>

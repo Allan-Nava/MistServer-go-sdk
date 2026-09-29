@@ -1,14 +1,11 @@
-.PHONY: build test
-#
-build:
-	echo "start build"
-	go build . 
-	echo "end build"
-#
-test:
+.PHONY: build test lint
 
-	echo "start build"
-	go build .
-	go test -v ./...
-	echo "end build"
-#
+build:
+	go build ./...
+
+test:
+	go vet ./...
+	go test -race -count=1 ./...
+
+lint:
+	golangci-lint run ./...

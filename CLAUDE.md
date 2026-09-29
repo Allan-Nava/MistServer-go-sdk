@@ -1,23 +1,26 @@
 # CLAUDE.md
 
 Go client for the [MistServer](https://mistserver.org) controller API (the JSON API on port 4242,
-path `/api`). Small library, no binary: two packages, no tests yet.
+path `/api`). Small library, no binary: two packages. Go 1.23+ (floor set by resty).
 
 ## Commands
 
 ```bash
-go build ./...          # the root has no Go files: `go build .` (and so `make build`) fails
-go vet ./...
-golangci-lint run ./...
-go test ./...           # compiles, but there are no tests
+make build              # go build ./...  (the root has no Go files, so never `go build .`)
+make test               # go vet + go test -race
+make lint               # golangci-lint v2
 ```
+
+CI (`.github/workflows/ci.yml`) runs tidy check, vet, race tests on the go.mod floor and on
+stable, golangci-lint and govulncheck. Tags `vX.Y.Z` create a GitHub release with generated notes.
+Renovate (not Dependabot) keeps modules and actions current.
 
 ## Layout
 
 - `mist/` — the SDK. **Package name is `mist_go`**, directory is `mist`, so callers import it as
   `mist "github.com/Allan-Nava/MistServer-go-sdk/mist"`. Don't rename one without the other — it is
   a breaking change for every importer.
-  - `mist.go` — `IMistGoClient` interface, `NewService`, auth, and the generic `postRequest[T, R]`.
+  - `mist.go` — `IMistGoClient` interface, `NewService`, auth, `doAuthorized` and `postRequest`.
   - `configuration.go` — functional options (`WithBaseURL`, `WithUsername`, `WithPassword`).
   - `request.go` / `response.go` — JSON payloads. Exported request types embed the unexported
     `authorizeRequest`, which the service fills in; callers never set it.
@@ -26,34 +29,37 @@ go test ./...           # compiles, but there are no tests
 
 ## How a call works
 
-Every public method does the same three things: `getAuthorization()`, copy the auth block into the
-request, `postRequest` the whole struct as a JSON body to `BaseUrl`.
+Every public method is one line: `doAuthorized[Resp](s, request)`. It gets the cached login,
+sets it on the request (`setAuthorization`, promoted from the embedded `authorizeRequest`),
+POSTs the struct as JSON to `BaseUrl`, then checks `authorize.status` in the reply.
+MistServer answers **HTTP 200 even when auth fails**, so anything but `OK` resets the cache,
+retries once with a fresh challenge, then returns `ErrUnauthorized`.
 
 Auth is MistServer's challenge scheme: an empty POST returns `authorize.challenge`, then the password
 sent is `md5(md5(password) + challenge)`. The result is cached for one minute behind a mutex
 (`lastAuthorized`). MD5 is mandated by the MistServer protocol — don't "upgrade" it.
 
 To add an endpoint: request struct embedding `authorizeRequest` with the MistServer command as its
-JSON tag (`request.go`), a response type if the reply isn't `Response` (`response.go`), a method on
-`IMistGoClient` + `*service` following the existing pattern (`mist.go`). The command names come from
+JSON tag (`request.go`), a response type embedding `BaseResponse` if the reply isn't `Response`
+(`response.go`) — embedding it is what makes the status check work — and a one-line method on
+`IMistGoClient` + `*service` (`mist.go`). Add a case to `mist_test.go`. The command names come from
 the MistServer API docs: https://docs.mistserver.org/mistserver/integration/api/
 
 ## Gotchas
 
-- MistServer answers **HTTP 200 even when auth fails**; the failure is only in
-  `authorize.status` (`CHALL`, `NOACC`). `postRequest` does not check it yet.
-- `logger` and `restyClient` passed to `NewService` must be non-nil; there is no default.
+- `NewService` defaults a nil resty client to `resty.New()` and a nil logger to `zap.NewNop()`.
 - The logger is a `*zap.SugaredLogger`: key/value calls need the `…w` variants (`Errorw`,
   `Warnw`). Plain `Error("msg", "error", err)` just concatenates.
-- `AddStream` fields have no `omitempty`: zero values (`DVR: 0`, `stop_sessions: false`) are sent.
-- `go.mod` says `go 1.19` and CI builds 1.19–1.21, but current resty/zap need newer Go — that is
-  why the Renovate dependency PRs fail CI. Raise the Go floor and the CI matrix together.
-- `PostAutoPushStopRequest` is unused (duplicate of `PostAutoPushRemoveRequest`).
+- `AddStream` fields are `omitempty`, so zero values are not sent and don't overwrite settings
+  on an existing stream. The flip side: you can't explicitly send `DVR: 0`.
+- `PostAutoPushStopRequest` is deprecated (duplicate of `PostAutoPushRemoveRequest`); kept only
+  because it's exported.
+- Raising the Go floor in `go.mod` means updating the first entry of the CI matrix too.
 
 ## Conventions
 
 - Keep the public surface on `IMistGoClient`; `service` stays unexported.
-- New code gets `go vet` + `golangci-lint` clean; prefer table tests against `httptest.Server`
-  (fake the challenge round-trip) over hitting a real MistServer.
+- New code gets `go vet` + `golangci-lint` clean. Tests use the `fakeMist` handler in
+  `mist_test.go` (it fakes the challenge round-trip) — never a real MistServer.
 - The Pages site in `docs/` documents the API by hand — update its endpoint table when the
   interface changes.

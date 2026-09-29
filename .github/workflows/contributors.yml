@@ -2,13 +2,16 @@ name: Contributors
 
 on:
   push:
-    branches: main
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   contributors:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: akhilmhdh/contributors-readme-action@v2.3.8
+      - uses: akhilmhdh/contributors-readme-action@v2.3.11
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

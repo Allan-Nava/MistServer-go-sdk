@@ -25,7 +25,10 @@ type service struct {
 // authorize.status is not "OK" even after a fresh challenge.
 var ErrUnauthorized = errors.New("mistserver: unauthorized")
 
-const authorizeStatusOK = "OK"
+const (
+	authorizeStatusOK        = "OK"
+	authorizeStatusChallenge = "CHALL"
+)
 
 type IMistGoClient interface {
 	//
@@ -158,7 +161,9 @@ func doAuthorized[R any, T any, PT interface {
 		}
 
 		s.resetAuthorization()
-		if attempt > 0 {
+		// Only CHALL comes with a fresh challenge worth retrying; NOACC (no
+		// accounts configured) would fail the same way again.
+		if attempt > 0 || status != authorizeStatusChallenge {
 			return nil, fmt.Errorf("%w: status %q", ErrUnauthorized, status)
 		}
 	}
@@ -169,6 +174,9 @@ func postRequest[T any, R any](s *service, request T) (*R, error) {
 
 	r, err := s.restyClient.
 		R().
+		// MistServer only reads the body as the command when the Content-Type
+		// is exactly this; any parameter (e.g. a charset) makes it ignore it.
+		SetHeader("Content-Type", "application/json").
 		SetBody(request).
 		Post(s.mistConfiguration.BaseUrl)
 

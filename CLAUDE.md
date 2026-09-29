@@ -32,8 +32,10 @@ Renovate (not Dependabot) keeps modules and actions current.
 Every public method is one line: `doAuthorized[Resp](s, request)`. It gets the cached login,
 sets it on the request (`setAuthorization`, promoted from the embedded `authorizeRequest`),
 POSTs the struct as JSON to `BaseUrl`, then checks `authorize.status` in the reply.
-MistServer answers **HTTP 200 even when auth fails**, so anything but `OK` resets the cache,
-retries once with a fresh challenge, then returns `ErrUnauthorized`.
+MistServer answers **HTTP 200 even when auth fails**, so anything but `OK` resets the cache and
+returns `ErrUnauthorized`. Only `CHALL` is retried (once, with a fresh challenge): the challenge is
+`md5(date + client host)`, so it rolls over daily. `NOACC` (no accounts on the server) is not
+retried — it carries no challenge, and on a local connection the command has already run.
 
 Auth is MistServer's challenge scheme: an empty POST returns `authorize.challenge`, then the password
 sent is `md5(md5(password) + challenge)`. The result is cached for one minute behind a mutex
@@ -47,6 +49,12 @@ the MistServer API docs: https://docs.mistserver.org/mistserver/integration/api/
 
 ## Gotchas
 
+- MistServer reads the POST body as the command **only if `Content-Type` is exactly
+  `application/json`** — a charset parameter makes it ignore the body and answer `CHALL`.
+  `postRequest` sets the header per request for that reason; don't drop it.
+- Replies to `addstream`/`deletestream` put `"incomplete list": 1` inside `streams`, which is why
+  `PostStreamResponse.Streams` is `any` and not `map[string]Stream`.
+
 - `NewService` defaults a nil resty client to `resty.New()` and a nil logger to `zap.NewNop()`.
 - The logger is a `*zap.SugaredLogger`: key/value calls need the `…w` variants (`Errorw`,
   `Warnw`). Plain `Error("msg", "error", err)` just concatenates.
@@ -58,8 +66,15 @@ the MistServer API docs: https://docs.mistserver.org/mistserver/integration/api/
 
 ## Conventions
 
+- **TDD, always.** Red first: a test in `mist_test.go` that fails for the right reason, then the
+  minimal fix, then refactor. Tests that only pin existing behaviour must be shown to fail on a
+  mutation, or they prove nothing.
+- Server behaviour comes from the MistServer source (`src/controller/controller_api.cpp`,
+  `controller_push.cpp`, `controller_streams.cpp` in DDVTech/mistserver), not from guesses.
+  `fakeMist` must mirror it: extend the fake before writing a test that depends on new behaviour.
+
 - Keep the public surface on `IMistGoClient`; `service` stays unexported.
 - New code gets `go vet` + `golangci-lint` clean. Tests use the `fakeMist` handler in
-  `mist_test.go` (it fakes the challenge round-trip) — never a real MistServer.
+  `mist_test.go` (challenge round-trip, NOACC, the Content-Type rule) — never a real MistServer.
 - The Pages site in `docs/` documents the API by hand — update its endpoint table when the
   interface changes.

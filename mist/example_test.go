@@ -39,7 +39,7 @@ func ExampleNewService() {
 	// server: 3.4 Generic_64
 }
 
-func ExampleIMistGoClient_Health() {
+func ExampleNewService_health() {
 	client := newClient()
 
 	resp, err := client.Health()
@@ -53,7 +53,7 @@ func ExampleIMistGoClient_Health() {
 	// live online=1 source=push://
 }
 
-func ExampleIMistGoClient_PostStream() {
+func ExamplePostStreamRequest() {
 	client := newClient()
 
 	// Creates the stream, or updates it if it exists. Zero-valued fields
@@ -70,7 +70,7 @@ func ExampleIMistGoClient_PostStream() {
 	// Output: stream saved
 }
 
-func ExampleIMistGoClient_PostStreamRemove() {
+func ExamplePostStreamRemoveRequest() {
 	client := newClient()
 
 	if _, err := client.PostStreamRemove(mist.PostStreamRemoveRequest{DeleteStream: "live"}); err != nil {
@@ -80,7 +80,7 @@ func ExampleIMistGoClient_PostStreamRemove() {
 	// Output: stream deleted
 }
 
-func ExampleIMistGoClient_PostAutoPush() {
+func ExamplePostAutoPushRequest() {
 	client := newClient()
 
 	// Restream "live" to the target every time it comes online.
@@ -97,7 +97,7 @@ func ExampleIMistGoClient_PostAutoPush() {
 	// Output: auto-push added
 }
 
-func ExampleIMistGoClient_PostAutoPushRemove() {
+func ExamplePostAutoPushRemoveRequest() {
 	client := newClient()
 
 	// A stream name removes every auto-push rule for that stream.
@@ -108,7 +108,7 @@ func ExampleIMistGoClient_PostAutoPushRemove() {
 	// Output: auto-pushes removed
 }
 
-func ExampleIMistGoClient_PostPushList() {
+func ExamplePostPushListRequest() {
 	client := newClient()
 
 	resp, err := client.PostPushList(mist.PostPushListRequest{PushList: true})
@@ -123,7 +123,7 @@ func ExampleIMistGoClient_PostPushList() {
 	// push 412: live -> rtmp://ingest.example.com/app/KEY
 }
 
-func ExampleIMistGoClient_PostPushStop() {
+func ExamplePostPushStopRequest() {
 	client := newClient()
 
 	pushes, err := client.PostPushList(mist.PostPushListRequest{PushList: true})
@@ -142,7 +142,7 @@ func ExampleIMistGoClient_PostPushStop() {
 	// Output: stopped [412]
 }
 
-func ExampleErrUnauthorized() {
+func ExampleNewService_badCredentials() {
 	client := mist.NewService(nil, nil,
 		mist.WithBaseURL(apiURL()),
 		mist.WithUsername("admin"),

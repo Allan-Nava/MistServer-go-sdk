@@ -47,7 +47,7 @@ To add an endpoint: request struct embedding `authorizeRequest` with the MistSer
 JSON tag (`request.go`), a response type embedding `BaseResponse` if the reply isn't `Response`
 (`response.go`) — embedding it is what makes the status check work — and a one-line method on
 `IMistGoClient` + `*service` (`mist.go`). Add a case to `mist_test.go` and an
-`ExampleIMistGoClient_<Method>` to `example_test.go`. The command names come from
+`Example<RequestType>` to `example_test.go`. The command names come from
 the MistServer API docs: https://docs.mistserver.org/mistserver/integration/api/
 
 ## Gotchas
@@ -76,6 +76,11 @@ the MistServer API docs: https://docs.mistserver.org/mistserver/integration/api/
   example in `example_test.go` with an `// Output:` block. Example bodies read like real usage
   (`mist.` qualified, no test helpers beyond `newClient()` / `apiURL()`). Keep README and the
   site's snippets in sync with them.
+- **Name examples after something go/doc can attach them to:** a function (`ExampleNewService`,
+  `ExampleNewService_health`), a type (`ExamplePostStreamRequest`) or a method declared with a
+  receiver. `ExampleIMistGoClient_Health` (interface method) or `ExampleErrUnauthorized` (variable)
+  compile, pass vet and run, but pkg.go.dev silently drops them. `TestExamplesAreDocumented`
+  (`doc_test.go`) enforces this.
 - Server behaviour comes from the MistServer source (`src/controller/controller_api.cpp`,
   `controller_push.cpp`, `controller_streams.cpp` in DDVTech/mistserver), not from guesses.
   `fakeMist` must mirror it: extend the fake before writing a test that depends on new behaviour.

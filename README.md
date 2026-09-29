@@ -57,6 +57,19 @@ We welcome contributions to this project. If you want to contribute, please fork
 ## Contributors
 
 <!-- readme: contributors -start -->
+<table>
+	<tbody>
+		<tr>
+            <td align="center">
+                <a href="https://github.com/Allan-Nava">
+                    <img src="https://avatars.githubusercontent.com/u/22498435?v=4" width="100;" alt="Allan-Nava"/>
+                    <br />
+                    <sub><b>Allan Nava</b></sub>
+                </a>
+            </td>
+		</tr>
+	<tbody>
+</table>
 <!-- readme: contributors -end -->
 
 ## License

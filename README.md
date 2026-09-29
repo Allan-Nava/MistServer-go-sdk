@@ -47,6 +47,15 @@ if errors.Is(err, mist.ErrUnauthorized) {
 
 The client performs MistServer's challenge-response login for you and caches it for a minute.
 
+## What's covered
+
+Every call in the [MistServer API reference](https://docs.mistserver.org/category/list-of-api-calls)
+has a method — streams and stream tags, pushes and auto-pushes, statistics (`active_streams`,
+`clients`, `totals`, …), sessions, configuration and outputs, stream keys and JWKs, custom
+variables and external writers. `PostRaw` sends anything else, or several commands in one
+request. Where the MistServer docs and the controller source disagree, the SDK follows the
+source.
+
 There is a runnable example for every method on
 [pkg.go.dev](https://pkg.go.dev/github.com/Allan-Nava/MistServer-go-sdk/mist#pkg-examples)
 (source: [`mist/example_test.go`](mist/example_test.go)).

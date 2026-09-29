@@ -4,12 +4,16 @@ type AuthorizationResponse struct {
 	Authorize Authorize `json:"authorize"`
 }
 
+func (a *AuthorizationResponse) authorizeStatus() string { return a.Authorize.Status }
+
 type BaseResponse struct {
 	LTS       int             `json:"LTS"`
 	Authorize Authorize       `json:"authorize"`
 	Config    Config          `json:"config"`
 	Log       [][]interface{} `json:"log"`
 }
+
+func (b *BaseResponse) authorizeStatus() string { return b.Authorize.Status }
 
 type Response struct {
 	BaseResponse

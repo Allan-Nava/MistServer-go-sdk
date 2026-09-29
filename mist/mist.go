@@ -3,6 +3,7 @@ package mist_go
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -20,6 +21,12 @@ type service struct {
 	lastAuthorizeRequest *authorizeRequest
 }
 
+// ErrUnauthorized is returned when MistServer rejects the credentials, i.e.
+// authorize.status is not "OK" even after a fresh challenge.
+var ErrUnauthorized = errors.New("mistserver: unauthorized")
+
+const authorizeStatusOK = "OK"
+
 type IMistGoClient interface {
 	//
 	Health() (*Response, error)
@@ -32,7 +39,16 @@ type IMistGoClient interface {
 	//
 }
 
+// NewService returns a client for the MistServer API at the configured base URL.
+// A nil restyClient defaults to resty.New() and a nil logger to a no-op logger.
 func NewService(restyClient *resty.Client, logger *zap.SugaredLogger, functions ...func(sc *mistConfiguration)) IMistGoClient {
+	if restyClient == nil {
+		restyClient = resty.New()
+	}
+	if logger == nil {
+		logger = zap.NewNop().Sugar()
+	}
+
 	s := &service{
 		restyClient:       restyClient,
 		logger:            logger,
@@ -47,6 +63,13 @@ func NewService(restyClient *resty.Client, logger *zap.SugaredLogger, functions 
 	return s
 }
 
+func (s *service) resetAuthorization() {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.lastAuthorizeRequest = nil
+}
+
 func (s *service) getAuthorization() (*authorizeRequest, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -58,7 +81,7 @@ func (s *service) getAuthorization() (*authorizeRequest, error) {
 	response, err := postRequest[postAuthorizeRequest, AuthorizationResponse](s, postAuthorizeRequest{})
 
 	if err != nil {
-		s.logger.Error("post request failed", "error", err)
+		s.logger.Errorw("challenge request failed", "error", err)
 		return nil, err
 	}
 
@@ -78,83 +101,67 @@ func (s *service) getAuthorization() (*authorizeRequest, error) {
 }
 
 func (s *service) Health() (*Response, error) {
-	auth, err := s.getAuthorization()
-	if err != nil {
-		s.logger.Error("get authorization failed", "error", err)
-		return nil, err
-	}
-
-	request := healthRequest{}
-	request.authorizeRequest = *auth
-
-	return postRequest[healthRequest, Response](s, request)
+	return doAuthorized[Response](s, healthRequest{})
 }
 
 func (s *service) PostStream(request PostStreamRequest) (*PostStreamResponse, error) {
-	auth, err := s.getAuthorization()
-	if err != nil {
-		s.logger.Error("get authorization failed", "error", err)
-		return nil, err
-	}
-
-	request.authorizeRequest = *auth
-
-	return postRequest[PostStreamRequest, PostStreamResponse](s, request)
+	return doAuthorized[PostStreamResponse](s, request)
 }
 
 func (s *service) PostStreamRemove(request PostStreamRemoveRequest) (*PostStreamResponse, error) {
-	auth, err := s.getAuthorization()
-	if err != nil {
-		s.logger.Error("get authorization failed", "error", err)
-		return nil, err
-	}
-
-	request.authorizeRequest = *auth
-	return postRequest[PostStreamRemoveRequest, PostStreamResponse](s, request)
+	return doAuthorized[PostStreamResponse](s, request)
 }
 
 func (s *service) PostAutoPush(request PostAutoPushRequest) (*Response, error) {
-	auth, err := s.getAuthorization()
-	if err != nil {
-		s.logger.Error("get authorization failed", "error", err)
-		return nil, err
-	}
-
-	request.authorizeRequest = *auth
-	return postRequest[PostAutoPushRequest, Response](s, request)
+	return doAuthorized[Response](s, request)
 }
 
 func (s *service) PostPushList(request PostPushListRequest) (*PostPushListResponse, error) {
-	auth, err := s.getAuthorization()
-	if err != nil {
-		s.logger.Error("get authorization failed", "error", err)
-		return nil, err
-	}
-
-	request.authorizeRequest = *auth
-	return postRequest[PostPushListRequest, PostPushListResponse](s, request)
+	return doAuthorized[PostPushListResponse](s, request)
 }
 
 func (s *service) PostPushStop(request PostPushStopRequest) (*Response, error) {
-	auth, err := s.getAuthorization()
-	if err != nil {
-		s.logger.Error("get authorization failed", "error", err)
-		return nil, err
-	}
-
-	request.authorizeRequest = *auth
-	return postRequest[PostPushStopRequest, Response](s, request)
+	return doAuthorized[Response](s, request)
 }
 
 func (s *service) PostAutoPushRemove(request PostAutoPushRemoveRequest) (*Response, error) {
-	auth, err := s.getAuthorization()
-	if err != nil {
-		s.logger.Error("get authorization failed", "error", err)
-		return nil, err
-	}
+	return doAuthorized[Response](s, request)
+}
 
-	request.authorizeRequest = *auth
-	return postRequest[PostAutoPushRemoveRequest, Response](s, request)
+// doAuthorized attaches the cached authorization to request, sends it, and
+// checks authorize.status in the reply: MistServer answers HTTP 200 even when
+// the login is rejected. A rejected login is retried once with a fresh
+// challenge, since the cached one may have expired server-side.
+func doAuthorized[R any, T any, PT interface {
+	*T
+	setAuthorization(authorizeRequest)
+}](s *service, request T) (*R, error) {
+	for attempt := 0; ; attempt++ {
+		auth, err := s.getAuthorization()
+		if err != nil {
+			s.logger.Errorw("get authorization failed", "error", err)
+			return nil, err
+		}
+		PT(&request).setAuthorization(*auth)
+
+		response, err := postRequest[T, R](s, request)
+		if err != nil {
+			return response, err
+		}
+
+		status := ""
+		if a, ok := any(response).(interface{ authorizeStatus() string }); ok {
+			status = a.authorizeStatus()
+		}
+		if status == "" || status == authorizeStatusOK {
+			return response, nil
+		}
+
+		s.resetAuthorization()
+		if attempt > 0 {
+			return nil, fmt.Errorf("%w: status %q", ErrUnauthorized, status)
+		}
+	}
 }
 
 func postRequest[T any, R any](s *service, request T) (*R, error) {
@@ -162,7 +169,6 @@ func postRequest[T any, R any](s *service, request T) (*R, error) {
 
 	r, err := s.restyClient.
 		R().
-		SetResult(&response).
 		SetBody(request).
 		Post(s.mistConfiguration.BaseUrl)
 
@@ -176,7 +182,7 @@ func postRequest[T any, R any](s *service, request T) (*R, error) {
 
 	err = json.Unmarshal(r.Body(), &response)
 	if err != nil {
-		s.logger.Warn("unmarshal response failed", "error", err)
+		s.logger.Warnw("unmarshal response failed", "error", err)
 		return &response, err
 	}
 

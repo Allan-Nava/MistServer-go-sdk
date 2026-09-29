@@ -22,6 +22,8 @@ Renovate (not Dependabot) keeps modules and actions current.
   a breaking change for every importer.
   - `mist.go` — `IMistGoClient` interface, `NewService`, auth, `doAuthorized` and `postRequest`.
   - `configuration.go` — functional options (`WithBaseURL`, `WithUsername`, `WithPassword`).
+  - `example_test.go` — runnable `Example…` functions (package `mist_go_test`), shown on
+    pkg.go.dev and executed by `go test`. The fake server is the unexported `apiURL()` helper.
   - `request.go` / `response.go` — JSON payloads. Exported request types embed the unexported
     `authorizeRequest`, which the service fills in; callers never set it.
 - `lib/util.go` — `GenerateMD5`, used only by the auth handshake.
@@ -44,7 +46,8 @@ sent is `md5(md5(password) + challenge)`. The result is cached for one minute be
 To add an endpoint: request struct embedding `authorizeRequest` with the MistServer command as its
 JSON tag (`request.go`), a response type embedding `BaseResponse` if the reply isn't `Response`
 (`response.go`) — embedding it is what makes the status check work — and a one-line method on
-`IMistGoClient` + `*service` (`mist.go`). Add a case to `mist_test.go`. The command names come from
+`IMistGoClient` + `*service` (`mist.go`). Add a case to `mist_test.go` and an
+`ExampleIMistGoClient_<Method>` to `example_test.go`. The command names come from
 the MistServer API docs: https://docs.mistserver.org/mistserver/integration/api/
 
 ## Gotchas
@@ -69,6 +72,10 @@ the MistServer API docs: https://docs.mistserver.org/mistserver/integration/api/
 - **TDD, always.** Red first: a test in `mist_test.go` that fails for the right reason, then the
   minimal fix, then refactor. Tests that only pin existing behaviour must be shown to fail on a
   mutation, or they prove nothing.
+- **Examples, always.** Every public function, method or behaviour change ships with a runnable
+  example in `example_test.go` with an `// Output:` block. Example bodies read like real usage
+  (`mist.` qualified, no test helpers beyond `newClient()` / `apiURL()`). Keep README and the
+  site's snippets in sync with them.
 - Server behaviour comes from the MistServer source (`src/controller/controller_api.cpp`,
   `controller_push.cpp`, `controller_streams.cpp` in DDVTech/mistserver), not from guesses.
   `fakeMist` must mirror it: extend the fake before writing a test that depends on new behaviour.

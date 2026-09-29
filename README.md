@@ -47,6 +47,10 @@ if errors.Is(err, mist.ErrUnauthorized) {
 
 The client performs MistServer's challenge-response login for you and caches it for a minute.
 
+There is a runnable example for every method on
+[pkg.go.dev](https://pkg.go.dev/github.com/Allan-Nava/MistServer-go-sdk/mist#pkg-examples)
+(source: [`mist/example_test.go`](mist/example_test.go)).
+
 ## API Reference
 See [pkg.go.dev](https://pkg.go.dev/github.com/Allan-Nava/MistServer-go-sdk/mist) and the
 [project site](https://allan-nava.github.io/MistServer-go-sdk/).

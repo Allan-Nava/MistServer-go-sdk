@@ -12,9 +12,11 @@ make lint               # golangci-lint v2
 ```
 
 CI (`.github/workflows/ci.yml`) runs tidy check, vet, race tests on the go.mod floor and on
-stable, golangci-lint and govulncheck. `main` has a ruleset: those four checks are required and
-direct pushes are refused, except for repository admins and GitHub Actions (the contributors
-workflow commits the README list straight to `main`). Tags `vX.Y.Z` create a GitHub release with generated notes.
+stable, golangci-lint and govulncheck. `main` has a ruleset: changes go through a PR with those four
+checks green; direct pushes, force-pushes and deletion are refused. Only the repository admin can
+bypass (GitHub doesn't allow a GitHub Actions bypass on a personal repo). So the contributors
+workflow opens a PR instead of pushing; CI doesn't run on PRs created with `GITHUB_TOKEN`, so the
+admin merges those by hand. Tags `vX.Y.Z` create a GitHub release with generated notes.
 Renovate (not Dependabot) keeps modules and actions current.
 
 ## Layout
